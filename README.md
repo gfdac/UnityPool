@@ -38,37 +38,42 @@ Este script deve estar no Prefab do objeto que você quer reutilizar (sua bala, 
 
 ```csharp
 // Bullet.cs
-using UnityEngine;
-
 public class Bullet : MonoBehaviour
 {
-    // Guarda uma referência ao pool de onde esta bala veio.
     private ObjectPool<Bullet> bulletPool;
 
-    // Método para injetar a referência do pool no objeto.
     public void SetObjectPool(ObjectPool<Bullet> pool)
     {
         bulletPool = pool;
     }
 
-    // Exemplo de como devolver o objeto ao pool após uma colisão.
     private void OnCollisionEnter(Collision collision)
     {
-        // ... sua lógica de colisão aqui ...
+        // Lógica de colisão da bala
 
-        // Devolve o objeto ao pool para ser reutilizado.
+        // Retorne a bala ao pool
         bulletPool.ReturnObject(this);
     }
+}
 
-    // Você também pode devolver ao pool depois de um tempo
-    private void OnEnable()
+// BulletPoolManager.cs
+public class BulletPoolManager : MonoBehaviour
+{
+    public GameObject bulletPrefab;
+    public int poolSize = 20;
+
+    private ObjectPool<Bullet> bulletPool;
+
+    private void Awake()
     {
-        // Exemplo: desativa a bala depois de 5 segundos
-        Invoke("DisableBullet", 5f);
+        bulletPool = new ObjectPool<Bullet>(bulletPrefab.GetComponent<Bullet>(), poolSize);
     }
 
-    private void DisableBullet()
+    public Bullet GetBullet()
     {
-        bulletPool.ReturnObject(this);
+        Bullet bullet = bulletPool.GetObject();
+        bullet.transform.position = transform.position;
+        bullet.gameObject.SetActive(true);
+        return bullet;
     }
 }
