@@ -1,76 +1,74 @@
-# Object Pool
+# Object Pool para Unity
 
-O Object Pool é um componente utilizado para melhorar o desempenho e a eficiência de jogos e aplicativos que fazem uso intensivo de criação e destruição de objetos. O objetivo do Object Pool é reutilizar objetos em vez de criar novas instâncias sempre que necessário, reduzindo assim o overhead de alocação de memória e otimizando o uso dos recursos do sistema.
+![Unity](https://img.shields.io/badge/Unity-2021.3%2B-blue?style=for-the-badge&logo=unity)
+![Language](https://img.shields.io/badge/Language-C%23-green?style=for-the-badge&logo=c-sharp)
+![License](https://img.shields.io/badge/License-MIT-orange?style=for-the-badge)
 
-## Funcionalidades
+Um componente de Object Pooling genérico e reutilizável para Unity, projetado para melhorar drasticamente o desempenho em jogos que instanciam e destroem objetos com frequência.
 
-O Object Pool implementado neste projeto possui as seguintes funcionalidades:
+## 📝 Sobre o Projeto
 
-- Criação inicial de um pool de objetos com um tamanho pré-definido.
-- Reutilização de objetos inativos em vez de criar novas instâncias.
-- Ativação e desativação de objetos do pool conforme a necessidade.
-- Gerenciamento de objetos ativos e inativos.
-- Suporte a diferentes tipos de objetos.
-- Possibilidade de personalizar o tamanho do pool e outras configurações.
+O Object Pool é um padrão de projeto essencial para o desenvolvimento de jogos. Ele resolve um dos maiores gargalos de performance: a alocação e liberação constante de memória causadas pelas funções `Instantiate()` e `Destroy()`.
 
-## Como usar
+Em vez de criar novos objetos (como tiros, inimigos, efeitos visuais) e destruí-los depois, este sistema mantém um "pool" de objetos desativados. Quando um objeto é necessário, ele é retirado do pool e ativado. Quando não é mais preciso, ele é devolvido ao pool e desativado, pronto para ser reutilizado. Isso reduz o trabalho do Garbage Collector (Coletor de Lixo), resultando em um jogo mais fluido e com menos picos de lag (travamentos).
 
-Para usar o Object Pool em seu projeto, siga as etapas abaixo:
+## ✨ Principais Funcionalidades
 
-1. Adicione o script `ObjectPool.cs` ao seu projeto Unity.
-2. Crie uma classe para representar os objetos que serão gerenciados pelo pool, estendendo a classe `MonoBehaviour`.
-3. No código da classe do objeto, adicione o campo `ObjectPool<T>` para referenciar o pool de objetos.
-4. Implemente o método `Awake` da classe do objeto para inicializar o pool de objetos.
-5. Utilize o método `GetObject()` para obter um objeto ativo do pool. Caso não haja objetos inativos disponíveis, o pool criará uma nova instância do objeto.
-6. Utilize o método `ReturnObject(T obj)` para retornar um objeto ao pool quando ele não estiver mais em uso.
+- **Pool Pré-aquecido:** Cria uma quantidade inicial de objetos para evitar picos de lag durante o jogo.
+- **Reutilização Inteligente:** Reutiliza objetos inativos em vez de criar novas instâncias.
+- **Crescimento Dinâmico:** Se o pool ficar vazio, ele pode criar novos objetos sob demanda (configurável).
+- **Gerenciamento Simples:** Métodos claros para pegar (`GetObject`) e devolver (`ReturnObject`) objetos ao pool.
+- **100% Genérico:** Funciona com qualquer `MonoBehaviour`, seja para tiros, inimigos, partículas, etc.
+- **Fácil de Configurar:** Parâmetros públicos para definir o tamanho do pool e o prefab do objeto no Inspector da Unity.
 
-Exemplo de uso:
+## 🚀 Como Usar
+
+### 1. Instalação
+
+- Baixe o script `ObjectPool.cs` deste repositório.
+- Adicione o script a uma pasta do seu projeto Unity (ex: `Assets/Scripts/Pooling`).
+
+### 2. Configuração
+
+Para usar o sistema, você precisa de dois scripts principais: um para o objeto que será "poolado" (ex: `Bullet.cs`) e um para gerenciar o pool (ex: `BulletPoolManager.cs`).
+
+#### Passo 1: Script do Objeto (`Bullet.cs`)
+
+Este script deve estar no Prefab do objeto que você quer reutilizar (sua bala, inimigo, etc.).
 
 ```csharp
+// Bullet.cs
+using UnityEngine;
+
 public class Bullet : MonoBehaviour
 {
+    // Guarda uma referência ao pool de onde esta bala veio.
     private ObjectPool<Bullet> bulletPool;
 
+    // Método para injetar a referência do pool no objeto.
     public void SetObjectPool(ObjectPool<Bullet> pool)
     {
         bulletPool = pool;
     }
 
+    // Exemplo de como devolver o objeto ao pool após uma colisão.
     private void OnCollisionEnter(Collision collision)
     {
-        // Lógica de colisão da bala
+        // ... sua lógica de colisão aqui ...
 
-        // Retorne a bala ao pool
+        // Devolve o objeto ao pool para ser reutilizado.
+        bulletPool.ReturnObject(this);
+    }
+
+    // Você também pode devolver ao pool depois de um tempo
+    private void OnEnable()
+    {
+        // Exemplo: desativa a bala depois de 5 segundos
+        Invoke("DisableBullet", 5f);
+    }
+
+    private void DisableBullet()
+    {
         bulletPool.ReturnObject(this);
     }
 }
-
-public class BulletPoolManager : MonoBehaviour
-{
-    public GameObject bulletPrefab;
-    public int poolSize = 20;
-
-    private ObjectPool<Bullet> bulletPool;
-
-    private void Awake()
-    {
-        bulletPool = new ObjectPool<Bullet>(bulletPrefab.GetComponent<Bullet>(), poolSize);
-    }
-
-    public Bullet GetBullet()
-    {
-        Bullet bullet = bulletPool.GetObject();
-        bullet.transform.position = transform.position;
-        bullet.gameObject.SetActive(true);
-        return bullet;
-    }
-}
-```
-
-## Contribuindo
-
-Contribuições são bem-vindas! Sinta-se à vontade para abrir problemas (issues) e enviar pull requests com melhorias, correções de bugs ou novas funcionalidades.
-
-## Licença
-
-Este projeto está licenciado sob a Licença MIT. Consulte o arquivo [LICENSE](LICENSE) para obter mais informações.
